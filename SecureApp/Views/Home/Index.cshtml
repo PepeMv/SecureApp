@@ -1,0 +1,19 @@
+﻿@using Entidades
+@model Usuario
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+</head>
+<body>
+    <h1>Nombre: @Model.Nombre</h1>
+    <h1>Apellidos: @Model.Celular</h1>
+    <h1>Parametro: @ViewData["id"]</h1>
+    <div class="text-center">
+        @Html.Raw(@Model.Nombre)
+    </div>
+</body>
+</html>
+
