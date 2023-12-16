@@ -32,15 +32,5 @@ namespace Entidades
         [Column("TenantId")]
         public string? TenantId { get; set; }
 
-
-        //public Usuario(string codigo, string nombre, string correo, string celular, bool estaActivo)
-        //{
-        //    Codigo = codigo;
-        //    Nombre = nombre;
-        //    Correo = correo;
-        //    Celular = celular;
-        //    EstaActivo = estaActivo;
-        //}
-
     }
 }

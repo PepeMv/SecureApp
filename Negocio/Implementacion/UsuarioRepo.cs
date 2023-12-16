@@ -2,12 +2,11 @@
 using Dapper;
 using Entidades;
 using MensajesExternos;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Negocio.Clases;
 using Negocio.Interfaces;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -32,56 +31,75 @@ namespace Negocio.Implementacion
             return await conexion.QueryAsync<Usuario>(query);
         }
 
-        public async Task<Usuario> DameUsuarioPorId(int id)
+        public async Task<Usuario?> DameUsuarioPorId(int id)
         {
-            var query = $"SELECT * FROM `itp_accesos.usuario` WHERE Id = {id}";
+            var query = $"SELECT * FROM `itp_accesos.usuario` WHERE Id = @id";
 
             using var conexion = _dapperContext.CreateConnection();
 
-            return await conexion.QuerySingleOrDefaultAsync<Usuario>(query) ?? null;
+            return await conexion.QuerySingleOrDefaultAsync<Usuario>(query, new { id }) ?? null;
         }
 
         public async Task<int> Actualizausuario(ActualizaUsuarioEntrada entrada)
         {
-            var query = $"UPDATE `itp_accesos.usuario` SET Codigo='{entrada.Codigo}', Nombre='{entrada.Nombre}', Celular='{entrada.Celular}', EstaActivo='{entrada.EstaActivo}' WHERE Id='{entrada.Id}';";
-            
+            var query = $"UPDATE `itp_accesos.usuario` SET Codigo = @codigo, Nombre = @nombre, Celular = @celular, EstaActivo = @estaActivo WHERE Id = @id;";
+
+            var parameters = new DynamicParameters();
+
+            parameters.Add("id", entrada.Id, DbType.Int32);
+            parameters.Add("codigo", entrada.Codigo, DbType.String);
+            parameters.Add("nombre", entrada.Nombre, DbType.String);
+            parameters.Add("celular", entrada.Celular, DbType.String);
+            parameters.Add("estaActivo", entrada.EstaActivo, DbType.Boolean);
+
             using var conexion = _dapperContext.CreateConnection();
 
-            var xx = await conexion.ExecuteAsync(query);
+            await conexion.ExecuteAsync(query, parameters);
 
             return 0;
         }
         public async Task<LoginResponse> Login(string codigo, string contrasenia)
         {
 
-            var queryUsuario = "SELECT * FROM `itp_accesos.usuario` WHERE Codigo = '" + codigo + "' ";
+            var queryUsuario = "SELECT * FROM `itp_accesos.usuario` WHERE Codigo = @codigo";
+
+            var parametersUsuario = new DynamicParameters();
+            parametersUsuario.Add("codigo", codigo, DbType.String);
+
+
             using var conexion = _dapperContext.CreateConnection();
 
-            var usuario = await conexion.QueryFirstOrDefaultAsync<Usuario>(queryUsuario);
+            var usuario = await conexion.QueryFirstOrDefaultAsync<Usuario>(queryUsuario, parametersUsuario);
 
             if (usuario == null)
                 throw new Exception("Usuario o contrasenia incorrecto.");
 
-            var queryUsuarioInfo = "SELECT * FROM `itp_accesos.informacion_usuario` WHERE idUsuario = '" + usuario.Id + "' and contrasenia = '" + contrasenia + "'";
+            var queryUsuarioInfo = "SELECT * FROM `itp_accesos.informacion_usuario` WHERE idUsuario = @idUsuario and contrasenia = @contrasenia";
 
-            var usuarioInformacion = await conexion.QueryFirstOrDefaultAsync<InformacionUsuario>(queryUsuarioInfo);
+            var parametersUsuarioInfo = new DynamicParameters();
+            parametersUsuarioInfo.Add("idUsuario", usuario.Id, DbType.Int32);
+            parametersUsuarioInfo.Add("contrasenia", contrasenia, DbType.String);
+
+            var usuarioInformacion = await conexion.QueryFirstOrDefaultAsync<InformacionUsuario>(queryUsuarioInfo, parametersUsuarioInfo);
 
             if (usuarioInformacion == null)
                 throw new Exception("Usuario o contrasenia incorrecto.");
 
-            var issuer = _configuration["Jwt:Issuer"];
-            var audience = _configuration["Jwt:Audience"];
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
+            var issuer = _configuration["Jwt:Issuer"] ?? "";
+            var audience = _configuration["Jwt:Audience"] ?? "";
+            var configKey = _configuration["Jwt:Key"] ?? "";
+
+            var key = Encoding.ASCII.GetBytes(configKey);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = 
+                Subject =
                     new ClaimsIdentity(new[]
                     {
                         new Claim("Id", Guid.NewGuid().ToString()),
                         new Claim(JwtRegisteredClaimNames.Email, usuario.Codigo),
-                        new Claim(JwtRegisteredClaimNames.Jti, 
-                        Guid.NewGuid().ToString())
+                        new Claim(JwtRegisteredClaimNames.Typ, usuario.Codigo == Roles.ADMIN ? Roles.ADMIN : Roles.USER),
+                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                     }),
 
                 Expires = DateTime.UtcNow.AddMinutes(120),
@@ -98,9 +116,9 @@ namespace Negocio.Implementacion
             var stringToken = tokenHandler.WriteToken(token);
 
 
-            return new LoginResponse(stringToken, null);
+            return new LoginResponse(stringToken, " ");
 
-            
+
         }
     }
 }

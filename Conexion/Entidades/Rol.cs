@@ -26,13 +26,5 @@ namespace Entidades
         [Column("TenantId")]
         public string? TenantId { get; set; }
 
-
-        public Rol(string codigo, string nombre, bool estaActivo)
-        {
-            Codigo = codigo;
-            Nombre = nombre;
-            EstaActivo = estaActivo;
-        }
-
     }
 }

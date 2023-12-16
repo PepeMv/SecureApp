@@ -27,14 +27,5 @@ namespace Entidades
         [Column("TenantId")]
         public string? TenantId { get; set; }
 
-
-
-
-        public Usuario_Rol(int idUsuario, int idRol, bool estaActivo)
-        {
-            IdUsuario = idUsuario;
-            IdRol = idRol;
-            EstaActivo = estaActivo;
-        }
     }
 }

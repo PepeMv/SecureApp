@@ -3,6 +3,7 @@ using MensajesExternos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Negocio.Atributos;
 using Negocio.Interfaces;
 
 namespace VulApp.Controllers
@@ -20,6 +21,7 @@ namespace VulApp.Controllers
         }
 
         [Authorize]
+        [ApiAdmin]
         [HttpGet(Name = "DameTodosUsuarios")]
         [ProducesResponseType(typeof(Unit), StatusCodes.Status200OK)]
         public async Task<IActionResult> DameTodosUsuarios()
@@ -37,7 +39,7 @@ namespace VulApp.Controllers
             return Ok(result);
         }
 
-        [Authorize]
+        [Authorize]        
         [HttpPut(Name = "ActualizaUsuario")]
         [ProducesResponseType(typeof(Unit), StatusCodes.Status200OK)]
         public async Task<IActionResult> ActualizaUsuario(ActualizaUsuarioEntrada entrada)

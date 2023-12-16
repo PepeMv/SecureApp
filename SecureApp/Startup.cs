@@ -1,4 +1,5 @@
 ﻿using Conexion;
+using Conexion.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Negocio.Implementacion;
@@ -42,12 +43,15 @@ namespace VulApp
 
             services.AddAuthorization();
             services.AddScoped<DapperContext>();
-            services.AddScoped<IUsuarioRepo, UsuarioRepo>();
+            services.AddScoped<UsuarioRepo>();
+            services.AddScoped<IUsuarioRepo, ProxyUsuarioRepo>();
 
-            services.AddControllersWithViews();
+
+            services.AddControllersWithViews(options =>
+            {
+                //options.Filters.Add(new ApiAdminAttribute());
+            });
             services.AddSwaggerGen();
-
-            CargaEnsambladosPraMediatR(services);
 
             services.AddMvc(x => x.EnableEndpointRouting = false);
 
@@ -63,8 +67,8 @@ namespace VulApp
                 app.UseSwaggerUI();
                 app.UseDeveloperExceptionPage();
             }
+            app.UseRateLimitMiddleware(100, TimeSpan.FromMinutes(1));
 
-            //app.UseMiddleware<HandlerExceptionMiddleware>();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
@@ -79,20 +83,6 @@ namespace VulApp
 
         }
 
-        private void CargaEnsambladosPraMediatR(IServiceCollection services)
-        {
-            //var assemblyQuery = typeof(DameEmpresaPorIdHandler).Assembly;
 
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            assemblies
-            .Where(a => a?.FullName?.StartsWith("ITPBusiness") ?? false)
-            .ToList()
-            .ForEach(x =>
-            {
-                services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(x));
-            });
-
-        }
     }
 }
