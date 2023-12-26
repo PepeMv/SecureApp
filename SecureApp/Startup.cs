@@ -33,7 +33,7 @@ namespace VulApp
                     ValidIssuer = _configuration["Jwt:Issuer"],
                     ValidAudience = _configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey
-                    (Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
+                    (Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "")),
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = false,
@@ -67,6 +67,7 @@ namespace VulApp
                 app.UseSwaggerUI();
                 app.UseDeveloperExceptionPage();
             }
+
             app.UseRateLimitMiddleware(100, TimeSpan.FromMinutes(1));
 
             app.UseRouting();
@@ -75,7 +76,6 @@ namespace VulApp
             app
                 .UseEndpoints(endpoints =>
                 {
-                    //endpoints.MapControllers();
                     endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");

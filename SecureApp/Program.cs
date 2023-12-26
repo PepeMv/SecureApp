@@ -1,5 +1,4 @@
-using VulApp;
-
+namespace VulApp;
 public static class Program
 {
     public static void Main(string[] args)
@@ -25,5 +24,3 @@ public static class Program
             .UseStartup<Startup>();
         });
 }
-
-

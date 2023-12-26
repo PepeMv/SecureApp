@@ -1,7 +1,5 @@
-﻿using Conexion;
-using Entidades;
+﻿using Entidades;
 using MensajesExternos;
-using Microsoft.Extensions.Configuration;
 using Negocio.Clases;
 using Negocio.Interfaces;
 using System.Text.RegularExpressions;
@@ -11,13 +9,9 @@ namespace Negocio.Implementacion
     public class ProxyUsuarioRepo : IUsuarioRepo
     {
         private readonly UsuarioRepo _usuarioRepo;
-        private readonly DapperContext _dapperContext;
-        private readonly IConfiguration _configuration;
-        public ProxyUsuarioRepo(UsuarioRepo usuariorepo, DapperContext context, IConfiguration config)
+        public ProxyUsuarioRepo(UsuarioRepo usuariorepo)
         {
             _usuarioRepo = usuariorepo;
-            _dapperContext = context;
-            _configuration = config;
         }
 
         public async Task<int> Actualizausuario(ActualizaUsuarioEntrada entrada)
@@ -28,17 +22,17 @@ namespace Negocio.Implementacion
             if (SonEntradasSeguras([entrada.Codigo, entrada.Nombre, entrada.Correo, entrada.Celular]))
                 await _usuarioRepo.Actualizausuario(entrada);
             else
-                throw new Exception("Entradas invalidas para el procesamiento");
+                throw new EntradasInvalidasException();
 
             return 0;
         }
 
-        private bool SonEntradasSeguras(string[] inputs)
+        private static bool SonEntradasSeguras(string[] inputs)
         => !inputs
-           .ToList()
+           .AsEnumerable()
            .Any(x => !EsTextoSeguro(x));
 
-        private bool EsTextoSeguro(string input)
+        private static bool EsTextoSeguro(string input)
         {
             var patronJavaScript = @"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>";
             return !Regex.IsMatch(input, patronJavaScript, RegexOptions.IgnoreCase);
