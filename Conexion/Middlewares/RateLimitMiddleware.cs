@@ -4,12 +4,55 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Conexion.Middlewares
 {
+    public interface IRateLimitState
+    {
+        bool CanAccess(string ipAddress, IMemoryCache _cache, int limit);
+    }
+
+    public class OkState : IRateLimitState
+    {
+
+        public bool CanAccess(string ipAddress, IMemoryCache _cache, int limit)
+        {
+            var rateLimitKey = $"{ipAddress}_RateLimit";
+
+            if (_cache.TryGetValue(rateLimitKey, out int requestCount))
+            {
+                if (requestCount >= limit)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    public class ErrorState : IRateLimitState
+    {
+        public bool CanAccess(string ipAddress, IMemoryCache _cache, int limit)
+        {
+            var rateLimitKey = $"{ipAddress}_RateLimit";
+
+            if (_cache.TryGetValue(rateLimitKey, out int requestCount))
+            {
+                if (requestCount >= limit)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
     public class RateLimitMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly IMemoryCache _cache;
         private readonly int _limit;
         private readonly TimeSpan _interval;
+        private readonly IRateLimitState _state;
 
         public RateLimitMiddleware(RequestDelegate next, IMemoryCache cache, int limit, TimeSpan interval)
         {
@@ -17,27 +60,29 @@ namespace Conexion.Middlewares
             _cache = cache;
             _limit = limit;
             _interval = interval;
+            _state = new OkState();
         }
+
 
         public async Task InvokeAsync(HttpContext context)
         {
             var ipAddress = context.Connection.RemoteIpAddress.ToString();
 
             var rateLimitKey = $"{ipAddress}_RateLimit";
+            _cache.TryGetValue(rateLimitKey, out int requestCount);
 
-            if (_cache.TryGetValue(rateLimitKey, out int requestCount))
+
+            if (_state.CanAccess(ipAddress, _cache, _limit))
             {
-                if (requestCount >= _limit)
-                {
-                    context.Response.StatusCode = 429;
-                    await context.Response.WriteAsync("Rate limit exceeded. Please try again later.");
-                    return;
-                }
+                _cache.Set(rateLimitKey, requestCount + 1, _interval);
+                await _next(context);
             }
-
-            _cache.Set(rateLimitKey, requestCount + 1, _interval);
-
-            await _next(context);
+            else
+            {
+                context.Response.StatusCode = 429;
+                await context.Response.WriteAsync("Rate limit exceeded. Please try again later.");
+                return;
+            }
         }
     }
 
