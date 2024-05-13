@@ -19,7 +19,7 @@ namespace Negocio.Implementacion
             await Task.CompletedTask;
 
 
-            if (SonEntradasSeguras([entrada.Codigo, entrada.Nombre, entrada.Correo, entrada.Celular]))
+            if (entrada.EsObjetoValido([entrada.Codigo, entrada.Nombre, entrada.Correo, entrada.Celular]))
                 await _usuarioRepo.Actualizausuario(entrada);
             else
                 throw new EntradasInvalidasException();

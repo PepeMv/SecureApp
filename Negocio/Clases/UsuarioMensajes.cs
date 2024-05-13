@@ -1,5 +1,11 @@
-﻿namespace MensajesExternos
+﻿using System.Text.RegularExpressions;
+
+namespace MensajesExternos
 {
+    public interface IActualizaUsuarioEntrada
+    {
+        bool EsObjetoValido(string[] inputs);
+    }
     public class CreaUsuarioEntrada
     {
 
@@ -27,7 +33,7 @@
     }
 
 
-    public class ActualizaUsuarioEntrada
+    public class ActualizaUsuarioEntrada : IActualizaUsuarioEntrada
     {
 
         public int Id { get; set; }
@@ -51,6 +57,22 @@
             Celular = celular;
             EstaActivo = estaActivo;
         }
+
+        public bool EsObjetoValido(string[] inputs)
+        => SonEntradasSeguras(inputs);
+
+
+        private static bool SonEntradasSeguras(string[] inputs)
+        => !inputs
+           .AsEnumerable()
+           .Any(x => !EsTextoSeguro(x));
+
+        private static bool EsTextoSeguro(string input)
+        {
+            var patronJavaScript = @"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>";
+            return !Regex.IsMatch(input, patronJavaScript, RegexOptions.IgnoreCase);
+        }
+
     }
 
 
